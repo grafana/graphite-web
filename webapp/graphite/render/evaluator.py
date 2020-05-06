@@ -124,6 +124,7 @@ def evaluateTokens(requestContext, tokens, replacements=None, pipedArg=None):
       return []
     except InputParameterError as e:
       handleInvalidParameters(e)
+      raise
 
   return evaluateScalarTokens(tokens)
 
