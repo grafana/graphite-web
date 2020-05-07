@@ -1,7 +1,7 @@
 import re
 import six
 
-from graphite.errors import NormalizeEmptyResultError, InputParameterError, InputValidationError
+from graphite.errors import NormalizeEmptyResultError, InputParameterError
 from graphite.functions import SeriesFunction
 from graphite.logger import log
 from graphite.render.grammar import grammar
@@ -102,37 +102,27 @@ def evaluateTokens(requestContext, tokens, replacements=None, pipedArg=None):
     kwargs = dict([(kwarg.argname, evaluateTokens(requestContext, kwarg.args[0], replacements))
                    for kwarg in tokens.call.kwargs])
 
-    def handleInvalidParameters(e):
-      e.setSourceIdHeaders(requestContext.get('sourceIdHeaders', {}))
-      e.setTargets(requestContext.get('targets', []))
-      e.setFunction(tokens.call.funcname, args, kwargs)
-
-      # if input validation is not enforced and the exception type is InputValidationError
-      # then we only want to log the error, but not re-raise it
-      if not settings.ENFORCE_INPUT_VALIDATION and isinstance(e, InputValidationError):
-        if not getattr(handleInvalidParameters, 'alreadyLogged', False):
-          log.warning(invalidParamLogMsg(requestContext, str(e), tokens.call.funcname, args, kwargs))
-
-          # only log invalid parameters once
-          setattr(handleInvalidParameters, 'alreadyLogged', True)
-      else:
-        raise e
-
-      if settings.ENFORCE_INPUT_VALIDATION:
-        raise
-
     if hasattr(func, 'params'):
       try:
         (args, kwargs) = validateParams(tokens.call.funcname, func.params, args, kwargs)
       except InputParameterError as e:
-        handleInvalidParameters(e)
+        e.setSourceIdHeaders(requestContext.get('sourceIdHeaders', {}))
+        e.setTargets(requestContext.get('targets', []))
+        e.setFunction(tokens.call.funcname, args, kwargs)
+        if settings.ENFORCE_INPUT_VALIDATION:
+          raise
+        else:
+          log.warning('Validation Error: %s', str(e))
 
     try:
       return func(requestContext, *args, **kwargs)
     except NormalizeEmptyResultError:
       return []
     except InputParameterError as e:
-      handleInvalidParameters(e)
+        e.setSourceIdHeaders(requestContext.get('sourceIdHeaders', {}))
+        e.setTargets(requestContext.get('targets', []))
+        e.setFunction(tokens.call.funcname, args, kwargs)
+        raise
 
   return evaluateScalarTokens(tokens)
 
