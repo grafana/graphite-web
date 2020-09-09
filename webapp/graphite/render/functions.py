@@ -109,8 +109,6 @@ def getNodeOrTag(series, n, pathExpression=None):
 
 
 def aggKey(series, nodes, pathExpression=None):
-  if series is None:
-    return None
   # if series.name looks like it includes a function, use the first path expression
   if pathExpression is None and series.name[-1] == ')':
     pathExpression = _getFirstPathExpression(series.name)
@@ -1016,17 +1014,17 @@ def weightedAverage(requestContext, seriesListAvg, seriesListWeight, *nodes):
   sortedSeries={}
 
   for seriesAvg, seriesWeight in izip_longest(seriesListAvg , seriesListWeight):
-    key = aggKey(seriesAvg, nodes)
+    if seriesAvg is not None:
+      key = aggKey(seriesAvg, nodes)
+      if key not in sortedSeries:
+        sortedSeries[key]={}
+      sortedSeries[key]['avg']=seriesAvg
 
-    if key not in sortedSeries:
-      sortedSeries[key]={}
-    sortedSeries[key]['avg']=seriesAvg
-
-    key = aggKey(seriesWeight, nodes)
-
-    if key not in sortedSeries:
-      sortedSeries[key]={}
-    sortedSeries[key]['weight']=seriesWeight
+    if seriesWeight is not None:
+      key = aggKey(seriesWeight, nodes)
+      if key not in sortedSeries:
+        sortedSeries[key]={}
+      sortedSeries[key]['weight']=seriesWeight
 
   productList = []
 
