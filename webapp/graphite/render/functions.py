@@ -1014,17 +1014,17 @@ def weightedAverage(requestContext, seriesListAvg, seriesListWeight, *nodes):
   sortedSeries={}
 
   for seriesAvg, seriesWeight in izip_longest(seriesListAvg , seriesListWeight):
-    key = aggKey(seriesAvg, nodes)
+    if seriesAvg is not None:
+      key = aggKey(seriesAvg, nodes)
+      if key not in sortedSeries:
+        sortedSeries[key]={}
+      sortedSeries[key]['avg']=seriesAvg
 
-    if key not in sortedSeries:
-      sortedSeries[key]={}
-    sortedSeries[key]['avg']=seriesAvg
-
-    key = aggKey(seriesWeight, nodes)
-
-    if key not in sortedSeries:
-      sortedSeries[key]={}
-    sortedSeries[key]['weight']=seriesWeight
+    if seriesWeight is not None:
+      key = aggKey(seriesWeight, nodes)
+      if key not in sortedSeries:
+        sortedSeries[key]={}
+      sortedSeries[key]['weight']=seriesWeight
 
   productList = []
 
